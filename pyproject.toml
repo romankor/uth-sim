@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uth-sim"
+version = "0.1.0"
+description = "Monte Carlo EV engine for Ultimate Texas Hold'em (optimal strategy)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+dependencies = []  # standard library only
+
+[project.scripts]
+uth-sim = "uth.cli:main"
+uth-advise = "uth.advise:main"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools]
+packages = ["uth"]
