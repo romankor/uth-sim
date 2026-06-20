@@ -33,7 +33,7 @@ def _fmt(res):
         return (f"raise 4x: EV {res['ev_raise4x']:+.4f} (±{res['ci_raise4x']:.4f})   "
                 f"check: EV {res['ev_check']:+.4f} (±{res['ci_check']:.4f})")
     if s == "flop":
-        return (f"raise 2x: EV {res['ev_raise2x']:+.4f}   "
+        return (f"bet 2x: EV {res['ev_raise2x']:+.4f}   "
                 f"check: EV {res['ev_check']:+.4f}")
     return (f"bet 1x: EV {res['ev_bet']:+.4f}   "
             f"fold: EV {res['ev_fold']:+.4f}")

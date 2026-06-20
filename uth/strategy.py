@@ -36,7 +36,7 @@ def preflop_raise(hole):
 
 
 def flop_raise(hole, flop):
-    """Return True to raise 2x on the flop (hole + three community cards)."""
+    """Return True to bet 2x on the flop (hole + three community cards)."""
     cards = (hole[0], hole[1], flop[0], flop[1], flop[2])
     if category_of(eval7(cards)) >= TWO_PAIR:
         return True

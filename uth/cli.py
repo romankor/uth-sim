@@ -90,7 +90,7 @@ def format_report(stats, args, elapsed):
         "-" * 60,
         " Decision frequencies:",
         f"   Raise 4x (pre)    : {pct('4x'):5.2f}%",
-        f"   Raise 2x (flop)   : {pct('2x'):5.2f}%",
+        f"   Bet 2x (flop)     : {pct('2x'):5.2f}%",
         f"   Bet 1x (river)    : {pct('1x'):5.2f}%",
         f"   Fold              : {pct('fold'):5.2f}%",
         "=" * 60,

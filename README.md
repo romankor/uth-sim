@@ -49,7 +49,7 @@ flowchart TD
     A["Post Ante + Blind<br/>(+ optional Trips)"] --> B{Pre-flop<br/>2 hole cards}
     B -->|"raise"| P4["Play = 4x Ante"]
     B -->|"check"| C{Flop<br/>+3 community}
-    C -->|"raise"| P2["Play = 2x Ante"]
+    C -->|"bet"| P2["Play = 2x Ante"]
     C -->|"check"| D{River<br/>+2 community}
     D -->|"bet"| P1["Play = 1x Ante"]
     D -->|"fold"| F["Forfeit Ante + Blind"]
@@ -98,7 +98,7 @@ dealer holding.
 | Queen-high | suited kicker ≥ 6 · offsuit kicker ≥ 8 |
 | Jack-high | suited kicker ≥ 8 · offsuit kicker = 10 |
 
-**Flop — raise 2× with:** two pair or better · a hidden pair (uses a hole card,
+**Flop — bet 2× with:** two pair or better · a hidden pair (uses a hole card,
 except a pair of deuces) · four to a flush including a hidden card ≥ 10.
 
 **River — bet 1× vs fold:** enumerate all C(45, 2) = 990 possible dealer holdings
@@ -141,7 +141,7 @@ The **Play** bet is the only one you size, and good strategy makes it strongly
 ```mermaid
 xychart-beta
     title "How often each decision is taken"
-    x-axis ["Raise 4x (pre)", "Raise 2x (flop)", "Bet 1x (river)", "Fold"]
+    x-axis ["Raise 4x (pre)", "Bet 2x (flop)", "Bet 1x (river)", "Fold"]
     y-axis "Percent of hands" 0 --> 45
     bar [37.8, 19.7, 23.4, 19.2]
 ```

@@ -53,7 +53,7 @@ def test_flopped_quads_raises_2x():
     hole = parse_cards("AsAh")
     flop = parse_cards("AdAc7d")
     res = solve_flop(hole, flop, [], cfg)
-    assert res["action"] == "raise 2x"
+    assert res["action"] == "bet 2x"
     assert res["ev_raise2x"] > res["ev_check"]
 
 

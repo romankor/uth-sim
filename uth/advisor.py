@@ -81,7 +81,7 @@ def solve_river(hole, board, dead, cfg):
 
 
 def solve_flop(hole, flop, dead, cfg):
-    """Exact flop decision (raise 2x vs check) by enumerating turn+river and dealer."""
+    """Exact flop decision (bet 2x vs check) by enumerating turn+river and dealer."""
     pool = _pool(hole, flop, dead)
     n = len(pool)
     sum_2x = sum_check = 0.0
@@ -98,7 +98,7 @@ def solve_flop(hole, flop, dead, cfg):
     ev_check = sum_check / boards
     return {
         "street": "flop",
-        "action": "raise 2x" if ev_2x >= ev_check else "check",
+        "action": "bet 2x" if ev_2x >= ev_check else "check",
         "ev_raise2x": ev_2x,
         "ev_check": ev_check,
         "boards": boards,
