@@ -226,32 +226,59 @@ It prints the optimal action **with** and **without** the dead-card knowledge:
 
 ### How much is the information worth?
 
-Measured over 500,000 six-handed deals (paired comparison — same deals,
-dead-aware vs dead-blind river decision, both scored against the true reduced
-deck):
+At a 6-handed table you know **12 of the 52 cards** before the board comes —
+your 2 plus the opponents' 10. That's ~20 % of the unseen deck removed from the
+dealer's possible holdings. Measured as a paired comparison (same deals,
+dead-aware vs dead-blind decision, both scored against the true reduced deck):
 
-| Quantity | Value |
-|----------|:-----:|
-| Hands reaching a river decision | 42.7 % |
-| River decisions that **flip** with the knowledge | 4.51 % |
-| **Value of the information** | **+0.171 % of the Ante** |
+| Decision | Decisions that **flip** | EV added | Method |
+|----------|:-----------------------:|:--------:|--------|
+| **Pre-flop** | **9.3 %** of hands | **≈ +1.0 %** of the Ante | Monte Carlo, verified at 2 precisions |
+| **River** | 4.5 % of river hands | +0.17 % of the Ante | exact enumeration |
+| Flop | — | not yet measured (in between) | — |
 
 ```text
  Best edge achievable with full knowledge of all 6 hands
  ───────────────────────────────────────────────────────
-   2.24%  base house edge (optimal play)
- − 0.17%  using all 5 opponents' hands at the river
- − ε      tiny pre-flop / flop gains
+   2.24%  base house edge (optimal play, no info)
+ − ~1.0%  dead-card-aware PRE-FLOP decisions
+ − 0.17%  dead-card-aware RIVER decisions
+ − ?      flop (unmeasured)
  ───────────────────────────────────────────────────────
- ≈ 2.0–2.1%  house edge  →  STILL A LOSS for the player
+ ≈ ~1%    house edge  →  roughly halved, but STILL a LOSS
 ```
 
-**Bottom line:** knowing every other player's hand does **not** beat the game.
-It only nudges the dealer's 45-card unseen pool down to 35 — a weak signal that
-flips ~5 % of river calls. The classic UTH advantage play is seeing one of the
-**dealer's** hole cards (a flashing/exposed card), which is worth enough to turn
-the edge *positive* for the player; five other players' hands are nearly
-worthless by comparison.
+**Bottom line:** seeing every opponent's hand is worth a **lot more than
+intuition suggests — it roughly halves the house edge** — yet it still does
+**not** cross into player-advantage territory. The pre-flop value dominates
+because that's where you have the least board information, so the 10 known cards
+tip ~9 % of the raise/check calls, and a 4× raise leverages each one. (Seeing a
+**dealer** hole card, by contrast, *does* flip the edge positive — that's the
+classic UTH advantage play.)
+
+### Worked example: when the static chart is flat-out wrong
+
+Four players at the table hold **A3 / A4 / A5 / A6 rainbow** — so all four aces
+are in play and **no ace can ever come on the board.** The chart says "any ace →
+raise 4×". The solver disagrees for *every one of them*:
+
+| Hand | Raise 4× EV | Check EV | Chart says | Optimal |
+|------|:-----------:|:--------:|:----------:|:-------:|
+| A3 | −0.830 | −0.620 | raise 4× | **CHECK** |
+| A4 | −0.711 | −0.543 | raise 4× | **CHECK** |
+| A5 | −0.631 | −0.515 | raise 4× | **CHECK** |
+| A6 | −0.654 | −0.535 | raise 4× | **CHECK** |
+
+A small ace's 4× value comes almost entirely from **flopping a pair of aces** —
+impossible here, since there are no aces left in the deck. The advisor catches
+this; the static chart does not.
+
+```bash
+$ python -m uth.advise --hole "Ad5s" --dead "Ah3c As4d Ac6h"
+ Ignoring dead cards : RAISE 4X      # the static chart
+ Using dead cards    : CHECK         # correct
+ >> The dead cards CHANGE the optimal play: raise 4x -> check
+```
 
 ---
 
