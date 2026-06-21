@@ -11,8 +11,8 @@ instead of brute-force sampling.
 
 ```text
 $ python -m uth --hands 5000000 --no-trips
- House edge (Ante)   : +2.2418%  ± 0.19  (95% CI)
- Element of risk     : +0.5418%  (/ total wagered)
+ House edge (Ante)   : +2.33%  ± 0.15  (95% CI)
+ Element of risk     : +0.56%  (/ total wagered)
 ```
 
 - ✅ **Pure standard library** — no NumPy, no dependencies, just `python -m uth`.
@@ -20,8 +20,8 @@ $ python -m uth --hands 5000000 --no-trips
   possible dealer hands.
 - ✅ **Variance-reduced** — analytical Trips + a royal-flush control variate make
   the edge converge in millions of hands instead of tens of millions.
-- ✅ **Validated** — reproduces the published 2.185 %/0.53 % figures; 13 tests
-  including a brute-force exactness check.
+- ✅ **Validated** — lands next to the published 2.185 %/0.53 % optimal figures;
+  13 tests including a brute-force exactness check.
 
 ---
 
@@ -31,6 +31,7 @@ $ python -m uth --hands 5000000 --no-trips
 - [Optimal strategy](#optimal-strategy)
 - [Results](#results)
 - [Why it converges fast](#why-it-converges-fast-variance-reduction)
+- [Variance & bankroll](#variance--bankroll)
 - [Dead-card-aware advisor](#dead-card-aware-advisor)
 - [Usage](#usage)
 - [Project layout](#project-layout)
@@ -113,23 +114,24 @@ optimal and replaces the chart's "21 outs" heuristic.
 
 | Metric | This engine | Published |
 |--------|:-----------:|:---------:|
-| **House edge** (on the Ante) | **2.24 % ± 0.19** | 2.185 % |
-| **Element of risk** (per total wagered) | **0.542 %** | ≈ 0.53 % |
+| **House edge** (on the Ante) | **≈ 2.33 % ± 0.15** | 2.185 % |
+| **Element of risk** (per total wagered) | **≈ 0.56 %** | ≈ 0.53 % |
 | Average total wagered | 4.14 antes/hand | ≈ 4.15 |
 
-> The engine's 2.24 % sits just above the textbook 2.185 % because it uses the
+> The engine's ≈ 2.33 % sits just above the textbook 2.185 % because it uses the
 > *chart* for pre-flop/flop (a hair short of full computer-perfect play) with an
-> *exact* river. Element of risk and average bet match the published values,
-> cross-checking the evaluator, strategy, and settlement together.
+> *exact* river. Average bet matches the published value, cross-checking the
+> evaluator, strategy, and settlement together. (Naive sampling reads higher —
+> ~2.8 % — until enough royals are dealt; see the next section.)
 
 ### Where the edge comes from (expected net per bet, antes/hand)
 
 ```text
  Play   +0.4534  ┃██████████████████████████▶   (the bet you control — positive!)
  Ante   -0.1667  ◀██████████┃
- Blind  -0.3091  ◀██████████████████┃
+ Blind  -0.3100  ◀██████████████████┃
  ────────────────────────────────────────────────
- Base   -0.0224  →  2.24% house edge on the Ante
+ Base   -0.0233  →  2.33% house edge on the Ante
  Trips  -0.0350      separate 1-unit side bet  →  3.50% of the Trips stake
 ```
 
@@ -150,7 +152,7 @@ xychart-beta
 
 | Bet | House edge | Basis |
 |-----|:----------:|-------|
-| Base game (Ante + Blind + Play) | **2.24 %** | of the Ante |
+| Base game (Ante + Blind + Play) | **≈ 2.33 %** | of the Ante |
 | Trips (`pay_table_1`) | **3.50 %** | of the Trips stake (exact, analytical) |
 
 ---
@@ -203,6 +205,56 @@ than sampled. The full 5M-hand run reaches **±0.19 %**.
 
 ---
 
+## Variance & bankroll
+
+The edge is tiny (≈ −$2.33 per $100 ante) but the **swing is enormous** — a single
+hand's result has a std deviation of about **±$490**, ~210× the edge. So over any
+short session variance completely dominates, and only over many thousands of hands
+does the −2.3 % drift reliably win for the house. The simulator (`mode="play"`,
+realized outcomes) makes this concrete.
+
+**$50,000 bankroll, flat $100 ante, base game, optimal play:**
+
+| Hands | Mean end | Median | P(ahead) | 5th–95th pct | Risk of ruin | Median max drawdown |
+|------:|---------:|-------:|:--------:|:------------:|:------------:|:-------------------:|
+| 1 | $49,998 | $49,800 | 50 % | $49,400 – $50,500 | 0 % | $200 |
+| 100 | $49,802 | $49,578 | 46 % | $43,025 – $56,478 | 0 % | $4,380 |
+| 1,000 | $47,638 | $46,629 | 40 % | $25,279 – $71,929 | 0.0 % | $15,979 |
+| 10,000 | $31,353 | $13,093 | 28 % | $178 – $110,443 | **47 %** | $53,503 |
+
+Read the bottom row carefully: after 10,000 hands the **mean** ending bankroll is
+$31k but the **median** is only $13k, and **~47 % of players have busted** — yet
+the lucky 5 % finish above $110k. That gap between mean and median is the
+right-skew from the rare 500:1 Blind royals propping up the average.
+
+### Sample sessions and the percentile fan
+
+![Bankroll sample paths and percentile bands](assets/bankroll_paths.png)
+
+Left: 60 individual $100-ante sessions over 3,000 hands (green finish up, red
+down). Right: the percentile bands — the median drifts down slowly while the
+spread widens with √(hands).
+
+### Where you land, by horizon
+
+![Ending bankroll distribution by horizon](assets/bankroll_distribution.png)
+
+The distribution starts tight around $50k, shifts left and fattens with more
+hands, and by 10,000 hands develops a large spike at $0 (ruin) alongside a long
+upper tail.
+
+Reproduce any of this with the bankroll CLI:
+
+```bash
+python -m uth.bankroll --bankroll 50000 --ante 100 --horizons "1,100,1000,10000"
+python -m uth.bankroll --bankroll 50000 --ante 100 --trips   # include the Trips side bet
+```
+
+> The drift is calibrated to the measured ≈ 2.33 % edge; the variance and tails
+> come straight from realized play (the 500:1 / 50:1 / etc. payouts intact).
+
+---
+
 ## Dead-card-aware advisor
 
 UTH is purely you-vs-dealer, so at a full table the other players' hole cards are
@@ -240,12 +292,12 @@ dead-aware vs dead-blind decision, both scored against the true reduced deck):
 ```text
  Best edge achievable with full knowledge of all 6 hands
  ───────────────────────────────────────────────────────
-   2.24%  base house edge (optimal play, no info)
+   2.33%  base house edge (optimal play, no info)
  − ~1.0%  dead-card-aware PRE-FLOP decisions
  − 0.17%  dead-card-aware RIVER decisions
  − ?      flop (unmeasured)
  ───────────────────────────────────────────────────────
- ≈ ~1%    house edge  →  roughly halved, but STILL a LOSS
+ ≈ 1.2%   house edge  →  roughly halved, but STILL a LOSS
 ```
 
 **Bottom line:** seeing every opponent's hand is worth a **lot more than
@@ -321,7 +373,7 @@ No installation needed — run from the repo root:
 
 ```bash
 python -m uth --hands 1000000                 # full game (Ante+Blind+Play+Trips)
-python -m uth --hands 5000000 --no-trips       # base game only  -> ~2.24%
+python -m uth --hands 5000000 --no-trips       # base game only  -> ~2.3%
 python -m uth --hands 200000 --mode play       # realized variance (bankroll swings)
 python -m uth.advise --hole "AsKd" --dead "2c 2h 7d 9s Jh Js 4c 4d Tc Th"
 ```
@@ -361,6 +413,7 @@ uth/
   game.py        single-hand play, settlement, and exact per-hand EV
   simulator.py   Monte Carlo driver, parallelism, variance-reduced statistics
   advisor.py     dead-card-aware per-hand solvers (river / flop / pre-flop)
+  bankroll.py    bankroll / variance simulator + CLI (python -m uth.bankroll)
   cli.py         simulator CLI            (python -m uth)
   advise.py      advisor CLI              (python -m uth.advise)
 tests/           evaluator, game/house-edge, and advisor tests
