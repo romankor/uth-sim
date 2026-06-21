@@ -256,11 +256,11 @@ tip ~9 % of the raise/check calls, and a 4× raise leverages each one. (Seeing a
 **dealer** hole card, by contrast, *does* flip the edge positive — that's the
 classic UTH advantage play.)
 
-### Worked example: when the static chart is flat-out wrong
+### Worked example 1 — dead aces *kill* weak aces (raise → check)
 
-Four players at the table hold **A3 / A4 / A5 / A6 rainbow** — so all four aces
-are in play and **no ace can ever come on the board.** The chart says "any ace →
-raise 4×". The solver disagrees for *every one of them*:
+Four players hold **A3 / A4 / A5 / A6 rainbow**, so all four aces are in play and
+**no ace can ever come on the board.** The chart says "any ace → raise 4×"; the
+solver disagrees for *every one of them*:
 
 | Hand | Raise 4× EV | Check EV | Chart says | Optimal |
 |------|:-----------:|:--------:|:----------:|:-------:|
@@ -270,8 +270,7 @@ raise 4×". The solver disagrees for *every one of them*:
 | A6 | −0.654 | −0.535 | raise 4× | **CHECK** |
 
 A small ace's 4× value comes almost entirely from **flopping a pair of aces** —
-impossible here, since there are no aces left in the deck. The advisor catches
-this; the static chart does not.
+impossible here, since there are no aces left in the deck.
 
 ```bash
 $ python -m uth.advise --hole "Ad5s" --dead "Ah3c As4d Ac6h"
@@ -279,6 +278,40 @@ $ python -m uth.advise --hole "Ad5s" --dead "Ah3c As4d Ac6h"
  Using dead cards    : CHECK         # correct
  >> The dead cards CHANGE the optimal play: raise 4x -> check
 ```
+
+### Worked example 2 — discounting big cards *promotes* the hands below them (check → raise)
+
+The mirror image: strip the deck of high cards and the chart's marginal **checks**
+turn into raises. The more big cards are dead, the stronger the effect.
+
+**High-card hands** flip because removing the cards above them makes *their* card
+the best high card:
+
+| Hand | Big cards dead | Chart | Optimal | EV(raise 4×) |
+|------|:--------------:|:-----:|:-------:|:------------:|
+| K3o | A A A A | check | **RAISE** | −0.13 |
+| K4o | A A A A | check | **RAISE** | +0.01 |
+| Q7o | A A A A · K K K | check | **RAISE** | **+0.43** |
+| Q5s | A A A A · K K K | check | **RAISE** | **+0.51** |
+| J9o | A A A A · K K K · Q Q Q | check | **RAISE** | **+0.89** |
+
+**Suited connectors** flip for a *different* reason — stripping A/K/Q guts the
+dealer's high pairs/overcards, so T9s's middle pairs, straights and flushes win
+far more often (and a pair of tens becomes near *top* pair):
+
+| Hand | Big cards dead | Chart | Optimal | EV(raise 4×) |
+|------|:--------------:|:-----:|:-------:|:------------:|
+| T9s | A,K | check | **RAISE** | +0.84 |
+| T9s | A,K,Q | check | **RAISE** | **+0.97** |
+| T9o | A,K,Q | check | **RAISE** | +0.70 |
+| 98s | A,K,Q | check | **RAISE** | +0.83 |
+| **76s** | A,K,Q | check | **stays CHECK** | +0.18 *(check +0.31 wins)* |
+
+There's a **floor**: 76s does *not* flip — removing big cards doesn't make 76s
+itself strong, since the remaining J/T/9/8 still dominate it. So the rule the
+engine reveals is: **discounting high cards promotes the hands that sit just
+below them** (weak kings/queens, high connectors like T9s/JTs/98s) — not every
+junk hand.
 
 ---
 
